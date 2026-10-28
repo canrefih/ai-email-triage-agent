@@ -224,3 +224,308 @@ def test_tool_failure_stops_later_actions(system, monkeypatch):
 
     assert report["results"][0]["status"] == "failed"
     assert "send_ack" not in effects(store, "e01")
+
+
+def test_holding_failure_does_not_block_security_alert(
+    system, monkeypatch
+):
+    store, agent, _ = system
+
+    def fail_holding(email_id):
+        raise RuntimeError("Simulated holding failure")
+
+    monkeypatch.setattr(
+        agent.tools,
+        "move_to_holding",
+        fail_holding,
+    )
+
+    report = agent.process("e05")
+
+    assert [
+        (item["action"]["kind"], item["status"])
+        for item in report["results"]
+    ] == [
+        ("move_to_holding", "failed"),
+        ("escalate_to_human", "done"),
+    ]
+
+    assert effects(store, "e05") == ["escalate_to_human"]
+
+    folder = store.db.execute(
+        "SELECT folder FROM emails WHERE id = 'e05'"
+    ).fetchone()["folder"]
+
+    assert folder == "Inbox"
+
+
+def test_security_alert_failure_is_recorded(system, monkeypatch):
+    store, agent, _ = system
+
+    def fail_escalation(email_id, team):
+        raise RuntimeError("Simulated notification failure")
+
+    monkeypatch.setattr(
+        agent.tools,
+        "escalate_to_human",
+        fail_escalation,
+    )
+
+    report = agent.process("e05")
+
+    assert [
+        (item["action"]["kind"], item["status"])
+        for item in report["results"]
+    ] == [
+        ("move_to_holding", "done"),
+        ("escalate_to_human", "failed"),
+    ]
+
+    row = store.db.execute(
+        """
+        SELECT status, error
+        FROM actions
+        WHERE email_id = ? AND kind = ?
+        """,
+        ("e05", "escalate_to_human"),
+    ).fetchone()
+
+    assert row["status"] == "failed"
+    assert row["error"] == "RuntimeError"
+    assert effects(store, "e05") == ["move_to_holding"]
+
+
+def test_billing_failure_reports_ack_as_blocked(
+    system, monkeypatch
+):
+    store, agent, _ = system
+
+    def fail_route(email_id, folder):
+        raise RuntimeError("Simulated routing failure")
+
+    monkeypatch.setattr(agent.tools, "route", fail_route)
+
+    report = agent.process("e01")
+
+    assert [
+        (item["action"]["kind"], item["status"])
+        for item in report["results"]
+    ] == [
+        ("route", "failed"),
+        ("send_ack", "blocked"),
+    ]
+
+    assert effects(store, "e01") == []
+
+
+def test_recovery_retries_holding_without_repeating_alert(
+    system, monkeypatch
+):
+    store, agent, _ = system
+    original_holding = agent.tools.move_to_holding
+
+    def fail_holding(email_id):
+        raise RuntimeError("Simulated holding failure")
+
+    monkeypatch.setattr(
+        agent.tools,
+        "move_to_holding",
+        fail_holding,
+    )
+
+    first = agent.process("e05")
+    assert first["results"][0]["status"] == "failed"
+    assert first["results"][1]["status"] == "done"
+
+    monkeypatch.setattr(
+        agent.tools,
+        "move_to_holding",
+        original_holding,
+    )
+
+    second = agent.process("e05")
+
+    assert [
+        (item["action"]["kind"], item["status"])
+        for item in second["results"]
+    ] == [
+        ("move_to_holding", "done"),
+        ("escalate_to_human", "skipped"),
+    ]
+
+    kinds = effects(store, "e05")
+    assert kinds.count("move_to_holding") == 1
+    assert kinds.count("escalate_to_human") == 1
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"confidence": 0.1},
+        {"ambiguous": True},
+        {"confidence": 0.1, "ambiguous": True},
+    ],
+)
+def test_phishing_containment_precedes_uncertainty(system, changes):
+    _, _, decisions = system
+    data = {**decisions["e05"], **changes}
+
+    plan = make_plan(Decision.model_validate(data), Settings())
+
+    assert plan["actions"] == [
+        {"kind": "move_to_holding"},
+        {"kind": "escalate_to_human", "team": "security"},
+    ]
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"confidence": 0.1},
+        {"ambiguous": True},
+        {"confidence": 0.1, "ambiguous": True},
+    ],
+)
+def test_sensitive_escalation_precedes_uncertainty(system, changes):
+    _, _, decisions = system
+    data = {**decisions["e06"], **changes}
+
+    plan = make_plan(Decision.model_validate(data), Settings())
+
+    assert plan["actions"] == [
+        {
+            "kind": "escalate_to_human",
+            "team": "sensitive_requests",
+        }
+    ]
+
+
+def test_phishing_with_sensitive_topic_keeps_both_escalations(system):
+    _, _, decisions = system
+    data = {
+        **decisions["e05"],
+        "sensitive_topics": ["data_deletion"],
+        "confidence": 0.1,
+        "ambiguous": True,
+    }
+
+    plan = make_plan(Decision.model_validate(data), Settings())
+
+    assert plan["actions"] == [
+        {"kind": "move_to_holding"},
+        {"kind": "escalate_to_human", "team": "security"},
+        {
+            "kind": "escalate_to_human",
+            "team": "sensitive_requests",
+        },
+    ]
+
+
+def test_cached_classification_error_is_not_retried_by_default(
+    system, monkeypatch
+):
+    _, agent, _ = system
+    working_classify = agent.classifier.classify
+    calls = []
+
+    def timeout(email, history):
+        raise TimeoutError("Temporary model failure")
+
+    monkeypatch.setattr(agent.classifier, "classify", timeout)
+    agent.process("e01")
+
+    def recovered(email, history):
+        calls.append(email.id)
+        return working_classify(email, history)
+
+    monkeypatch.setattr(agent.classifier, "classify", recovered)
+
+    report = agent.process("e01")
+
+    assert calls == []
+    assert report["decision"] is None
+    assert report["error"] == "TimeoutError"
+    assert report["results"][0]["status"] == "skipped"
+
+
+def test_explicit_retry_recovers_failed_classification(
+    system, monkeypatch
+):
+    store, agent, _ = system
+    working_classify = agent.classifier.classify
+    calls = []
+
+    def timeout(email, history):
+        raise TimeoutError("Temporary model failure")
+
+    monkeypatch.setattr(agent.classifier, "classify", timeout)
+    first = agent.process("e01")
+
+    assert first["decision"] is None
+
+    def recovered(email, history):
+        calls.append(email.id)
+        return working_classify(email, history)
+
+    monkeypatch.setattr(agent.classifier, "classify", recovered)
+
+    report = agent.process(
+        "e01",
+        retry_classification_errors=True,
+    )
+
+    assert calls == ["e01"]
+    assert report["decision"]["intent"] == "billing"
+    assert "error" not in report
+    assert report["plan"]["actions"] == [
+        {"kind": "route", "folder": "Finance"},
+        {"kind": "send_ack", "template": "billing"},
+    ]
+    assert all(
+        item["status"] == "done"
+        for item in report["results"]
+    )
+
+    folder = store.db.execute(
+        "SELECT folder FROM emails WHERE id = 'e01'"
+    ).fetchone()["folder"]
+
+    assert folder == "Finance"
+
+    repeated = agent.process(
+        "e01",
+        retry_classification_errors=True,
+    )
+
+    assert calls == ["e01"]
+    assert all(
+        item["status"] == "skipped"
+        for item in repeated["results"]
+    )
+
+
+def test_retry_option_preserves_successful_cached_decision(
+    system, monkeypatch
+):
+    _, agent, _ = system
+    first = agent.process("e01")
+
+    def unexpected_call(email, history):
+        pytest.fail("Successful cached decision must not be reclassified")
+
+    monkeypatch.setattr(
+        agent.classifier,
+        "classify",
+        unexpected_call,
+    )
+
+    second = agent.process(
+        "e01",
+        retry_classification_errors=True,
+    )
+
+    assert second["decision"] == first["decision"]
+    assert all(
+        item["status"] == "skipped"
+        for item in second["results"]
+    )

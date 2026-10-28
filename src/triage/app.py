@@ -408,15 +408,28 @@ class TriageAgent:
         self.settings = settings
         self.executor = Executor(store, tools)
 
-    def process(self, email_id):
+    def process(self, email_id, retry_classification_errors=False):
         email = self.tools.get_email(email_id)
         saved = self.store.db.execute(
             "SELECT payload, source FROM decisions WHERE email_id = ?",
             (email_id,),
         ).fetchone()
 
-        if saved:
-            record = json.loads(saved["payload"])
+        cached_record = (
+            json.loads(saved["payload"])
+            if saved is not None
+            else None
+        )
+
+        retry_failed_classification = (
+            retry_classification_errors
+            and cached_record is not None
+            and cached_record.get("decision") is None
+            and "error" in cached_record
+        )
+
+        if saved and not retry_failed_classification:
+            record = cached_record
             source = saved["source"]
         else:
             source = self.classifier.source
@@ -443,7 +456,16 @@ class TriageAgent:
 
             with self.store.db:
                 self.store.db.execute(
-                    "INSERT INTO decisions VALUES (?, ?, ?, ?)",
+                    """
+                    INSERT INTO decisions (
+                        email_id, payload, source, created_at
+                    )
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(email_id) DO UPDATE SET
+                        payload = excluded.payload,
+                        source = excluded.source,
+                        created_at = excluded.created_at
+                    """,
                     (email_id, json.dumps(record), source, now()),
                 )
 
@@ -465,13 +487,24 @@ class TriageAgent:
             )
 
         results = []
+        business_actions_blocked = False
 
         for action in record["plan"]["actions"]:
+            is_escalation = action["kind"] == "escalate_to_human"
+
+            if business_actions_blocked and not is_escalation:
+                results.append({
+                    "action": action,
+                    "status": "blocked",
+                    "reason": "A previous action failed or needs reconciliation.",
+                })
+                continue
+
             result = self.executor.execute(email_id, action)
             results.append(result)
 
             if result["status"] in {"failed", "needs_reconciliation"}:
-                break
+                business_actions_blocked = True
 
         return {
             "email_id": email_id,
@@ -498,6 +531,11 @@ def main():
     parser.add_argument("--db", default="runtime/mock.sqlite")
     parser.add_argument("--base-url", default="http://localhost:11434/v1")
     parser.add_argument("--model")
+    parser.add_argument(
+        "--retry-classification-errors",
+        action="store_true",
+        help="Retry cached classification failures only.",
+    )
     args = parser.parse_args()
 
     if args.mode == "local" and not args.model:
@@ -518,7 +556,12 @@ def main():
 
         for email in emails:
             try:
-                report = agent.process(email.id)
+                report = agent.process(
+                    email.id,
+                    retry_classification_errors=(
+                        args.retry_classification_errors
+                    ),
+                )
             except Exception as exc:
                 report = {
                     "email_id": email.id,

@@ -1,153 +1,77 @@
-# AI Email-Triage Agent, Architecture and Integration Design
+# AI Email-Triage Agent — Compact Architecture
 
-## Scope and status
+## Scope
 
-I implemented a single-worker Python agent with Pydantic validation,
-deterministic business policies, a security gate and SQLite records.
+A single-worker Python prototype uses local Ollama (`llama3.2:3b`),
+Pydantic, deterministic policies, an independent security gate and SQLite.
+JSON supplies eight synthetic emails. Mailbox, ticket and notification
+actions are mocked. The separate [Graph design](exchange-integration.md)
+fulfills the Exchange integration-design requirement.
 
-I exercised the local LLM adapter using Ollama with `llama3.2:3b`. Mailbox operations,
-tickets, acknowledgments and notifications are mocked, as required for the
-mailbox portion of the exercise. No cloud LLM is used in the demonstrated
-configuration.
-
-## Components and flow
+## Flow
 
 ```mermaid
-flowchart TD
-    M["Mailbox tools<br/>Current: JSON + SQLite<br/>Planned: Microsoft Graph"]
-    A["TriageAgent<br/>Get email and limited sender history"]
-    L["Classifier<br/>Mock or on-prem LLM"]
-    V["Pydantic validation"]
-    P["Business policy<br/>Original action plan"]
-    S["Deterministic security gate<br/>May replace action plan"]
-    E["Action executor"]
-    T["Mock ticket and notification tools<br/>Planned: internal service adapters"]
-    D[("SQLite<br/>Decisions, security signals,<br/>plans and action states")]
-
-    M --> A
-    A --> L
-    L --> V
-    V --> P
-    V -->|"Invalid output or request failure"| R["Needs review plan"]
-    P --> S
+flowchart LR
+    M[Mock mailbox] --> A[Agent and sender metadata]
+    A --> C[Local Ollama or mock classifier]
+    C --> V[Pydantic validation]
+    V --> P[Business policy]
+    V -->|Failure| R[Needs review plan]
+    P --> S[Security gate]
     R --> S
-    A -->|"Email content"| S
-    S --> E
-    E --> M
-    E --> T
-    A --> D
-    S --> D
-    E --> D
+    A -->|Email content| S
+    S --> E[Controlled executor]
+    E --> T[Mock mailbox / tickets / notifications]
+    E --> D[(SQLite decisions and action states)]
 ```
 
-The classifier returns intent, priority, confidence, ambiguity,
-sensitive topics, refund details and a short reason. Pydantic validates
-the response structure; application code selects permitted actions.
+The classifier supplies structured interpretation. Policy authorizes actions.
+The security gate checks email content before execution, including cached runs.
+`prompts.py` contains system instructions and few-shot examples.
 
-The security gate checks the email before execution, including when
-a saved decision is reused. It does not prevent the model from reading
-malicious content.
+## Safety precedence
 
-## Policy and action control
+Phishing or gate signals require containment and security escalation.
+Sensitive topics require human escalation and suppress ordinary actions.
+These safety branches take precedence over low confidence and ambiguity.
+Other uncertain or unclassified requests go to Needs review. This precedence
+is an explicit assumption rather than a literal application of the general
+uncertainty rule to every conflicting case. Seven conflict cases test it.
+The gate uses narrow English patterns and provides no general attack guarantee.
 
-Billing routes to Finance with a fixed acknowledgment. Onboarding
-routes to Onboarding with a fixed acknowledgment. Outages create a
-ticket and route to Support; urgent outages attempt human escalation
-first. Complaints route to Support without an automatic reply.
+## Failures, retries and records
 
-Sensitive requests suppress normal business actions and require human
-escalation. Unknown refund amounts or a currency mismatch also escalate.
-Ambiguous, low-confidence and failed classifications go to Needs review.
-Other messages go to review because no business route is specified.
+A 20-second request timeout and one eligible SDK retry bound individual LLM
+requests. Failed classification creates a saved review plan. The explicit
+`--retry-classification-errors` flag retries only failed classifications.
+Successful cached decisions remain unchanged. Retry replaces the current
+decision snapshot, while earlier effects remain.
 
-Phishing containment takes precedence over ordinary routing and
-uncertainty: move to Holding, apply the Quarantine category and alert
-security. Sensitive-request escalation is preserved when applicable.
-This precedence is an explicit prototype assumption.
+Action failures block later non-escalation actions. Independent escalations
+still run. Results distinguish done, skipped, failed, blocked and
+needs_reconciliation. Blocked results exist in the report, not as separate
+action rows. Completed effects are skipped. Mock effects and completion
+records share a transaction; uncertain remote effects require reconciliation.
+The ledger is mutable, not a full immutable attempt history.
 
-The additional security gate detects narrow English-language patterns:
-a credential request with a URL, or an explicit command targeting an
-automated assistant. It replaces business actions with containment and
-security escalation. It includes limited negation handling.
+## Security and evidence
 
-This gate is not a general phishing detector. Wording changes,
-obfuscation or other languages may bypass it; legitimate instructional
-content may trigger it.
+The demonstrated model runs on localhost. No company LLM transition or
+endpoint allowlist is planned; the configurable URL does not enforce a
+network boundary. No link fetching or attachment execution is available.
+Real-data use requires access, encryption and retention controls.
+Sender history is ID-ordered metadata, not a chronological conversation.
 
-## Exchange Online integration - planned
+The suite passes 74 cases: 25 schema, 38 agent and 11 security cases.
+Preserved real LLM traces demonstrate specific scenarios. In v08 the model
+still misclassifies onboarding; the gate prevents the unsafe acknowledgment.
+Current mock recovery traces separately demonstrate the newer failure paths.
+See [test cases](test-cases.md) and [evaluation](evaluation.md).
 
-A Graph-backed mailbox adapter will replace mock mailbox operations.
-For unattended execution, use a Microsoft Entra application with
-certificate-based client credentials.
+## Production readiness — five lines
 
-Scope Exchange Application RBAC roles `Application Mail.ReadWrite`
-and `Application Mail.Send` to the shared mailbox. Avoid overlapping
-unrestricted grants and verify access boundaries before deployment.
-
-| Tool | Planned integration |
-|---|---|
-| `get_email` | `GET /users/{mailbox}/messages/{id}` |
-| `search_sender_history` | Retrieve a bounded set of earlier messages from the same sender; use timestamps and bounded pagination. |
-| `route` | `POST /users/{mailbox}/messages/{id}/move`, using a configured folder ID. |
-| `send_ack` | `POST /users/{mailbox}/messages/{id}/reply`, using a fixed template and approved recipient handling. |
-| `move_to_holding` | Add Quarantine while preserving existing categories, then move to Holding; track the two operations separately. |
-| `create_ticket` | Separate internal ticket-system adapter. |
-| `escalate_to_human` | Separate durable notification adapter for approved support/security destinations. |
-
-Validate required folder IDs at startup. Begin with bounded polling;
-production ingestion should persist delta synchronization state.
-Unread status must not be the processing ledger.
-
-Use `Prefer: IdType="ImmutableId"` on applicable requests and identify
-work by mailbox plus immutable message ID. This preserves tracking
-across folder moves within the same mailbox.
-
-## Errors, state and traceability
-
-The local LLM client has a 20-second request timeout and at most one SDK
-retry for eligible transient failures. Classification errors produce
-a review plan. Tool failures are recorded and stop later actions for
-that email. The batch continues with other emails.
-
-SQLite stores the classification, source, confidence, reason, original
-plan, final plan, security signals and action outcomes. Completed actions
-are skipped. Saved classifications are reused; controlled reprocessing
-is not yet implemented.
-
-Mock effects and completion records share a transaction. Remote actions
-cannot share it: uncertain outcomes require reconciliation rather than
-blind retries. A prior completed action cannot be undone by a later
-security reassessment.
-
-For Graph, respect `Retry-After` on throttling and use bounded backoff
-where appropriate. Authentication failures require operator attention.
-The current ledger is mutable and intended for a single worker.
-
-## Security and observed evidence
-
-Email content and sender history are untrusted data. No link-fetching
-or attachment-execution tool is available. Keep LLM traffic on the
-approved internal endpoint, protect remote connections with TLS and
-authentication, and keep credentials outside source control.
-
-The database stores synthetic email bodies. Real-data use requires
-access controls, encryption, retention limits and minimized logs.
-The mock sender-history implementation is ID-ordered metadata; real
-chronological history retrieval remains to be implemented.
-
-The automated suite passed 60 tests. Ollama produced the expected
-action plans on the eight development scenarios in the observed run.
-
-An additional evaluation exposed a prompt-injection failure: the model
-misclassified phishing as onboarding. After adding the security gate,
-the regression run produced all eight expected final plans, although
-the model still misclassified the attack. This demonstrates containment
-of that case, not general model accuracy or injection resistance.
-
-## Production readiness - five lines
-
-1. Monitor latency, failures, review backlog, escalation delivery and reconciliation cases.
-2. Evaluate model accuracy and security on fresh labeled examples; version prompts, policies and models.
-3. Provide human review, controlled reprocessing and approval of outbound actions before live automation.
-4. Bound concurrency and retries; respect Graph throttling and reconcile uncertain remote effects.
-5. Protect secrets and PII with scoped access, encryption, retention controls and tested rollback procedures.
+1. Monitor failures, review backlog, escalation delivery and reconciliation cases.
+2. Evaluate fresh labeled examples and version models, prompts and policies.
+3. Require human approval controls and reconsideration of incorrect successful decisions.
+4. Bound concurrency and retries; reconcile remote outcomes and respect Graph throttling.
+5. Protect secrets and PII with scoped access, encryption, retention and rollback procedures.

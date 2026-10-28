@@ -1,7 +1,7 @@
-PASS: first-run.jsonl: eight reports, 13 actions done
-PASS: second-run.jsonl: eight reports, 13 actions skipped
-PASS: evaluation-run.jsonl: eight reports, 13 actions done
-PASS: repeat-inference-run.jsonl: eight reports, 13 actions done
+PASS: first-run.jsonl: eight reports, 13 actions done; current policy/security agree
+PASS: second-run.jsonl: eight reports, 13 actions skipped; current policy/security agree
+PASS: evaluation-run.jsonl: eight reports, 13 actions done; current policy/security agree
 PASS: cached decisions preserved
 PASS: sensitive topics, refund extraction and ambiguity verified
-PASS: v08 contained without acknowledgment
+PASS: v08 contained without acknowledgment; original model error preserved
+PASS: seven current mock failure/recovery events verified

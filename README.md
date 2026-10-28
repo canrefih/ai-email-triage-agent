@@ -15,12 +15,12 @@ override an unsafe action plan.
 - Mock mailbox, acknowledgments, tickets and notifications.
 - SQLite decision records and action ledger.
 - Completed actions skipped on subsequent runs.
-- 60 passing automated tests.
+- 74 passing automated tests.
 - Eight original demonstration scenarios.
 - Eight additional evaluation scenarios, now retained as regression cases.
 
-The company-provided endpoint has not been tested. Local integration was
-demonstrated using Ollama on my workstation.
+The local LLM runs through Ollama on my workstation using `llama3.2:3b`.
+No company-provided LLM or future model-service integration is required.
 
 ## Scope
 
@@ -35,9 +35,9 @@ Exchange Online integration is documented using Microsoft Graph.
 A live Graph adapter is not implemented, consistent with the exercise's
 requirement to implement the core against a mocked mailbox.
 
-The prototype does not call a cloud LLM. In local mode, the configured
-base URL determines the destination; use an approved local or internal
-endpoint.
+The demonstrated local mode connects to Ollama at
+`http://localhost:11434/v1`. No cloud LLM is used.
+The base URL is configurable; the application does not enforce a network boundary.
 
 ## Requirements
 
@@ -74,13 +74,14 @@ Ollama is installed separately as a Windows application, outside `.venv`.
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-The current suite passed 60 tests covering:
+The current suite passed 74 tests covering:
 
 - Decision-schema validation.
 - Routing and acknowledgment policies.
 - Sensitive-topic escalation and refund thresholds.
 - Ambiguity and classification failure.
-- Tool failure and repeat-run protection.
+- Tool failure isolation, independent escalations and repeat-run protection.
+- Conflicting safety-rule precedence and explicit retry of failed classifications.
 - Security signals, selected benign cases and a negation case.
 - Blocking a mock acknowledgment despite a compromised classification.
 
@@ -162,6 +163,29 @@ $evalRun = Get-Date -Format "yyyyMMdd-HHmmss-fff"
 
 No API key is required for the demonstrated local Ollama configuration.
 
+## Retry failed classifications
+
+Classification failures are saved and routed to human review.
+By default, subsequent runs reuse the saved result.
+
+To explicitly retry cached classification failures, use the same
+database with:
+
+```powershell
+.\.venv\Scripts\python.exe -m triage.app `
+    --mode local `
+    --model "llama3.2:3b" `
+    --db "runtime/EXISTING_DATABASE.sqlite" `
+    --retry-classification-errors
+```
+
+This option retries only failed classifications. It preserves successful
+cached decisions and does not repeat completed actions.
+
+It does not reconsider valid but incorrect model decisions or provide
+a human approval workflow. Reclassification replaces the current decision
+record; previous action records remain.
+
 ### Verify a local run
 
 For each report:
@@ -190,48 +214,14 @@ actions. It verifies repeat-run protection, not model consistency.
 The security gate is reassessed before execution, including when a
 classification is cached. It cannot undo actions already completed.
 
-## Connect another on-prem endpoint
-
-The local adapter requires:
-
-- An OpenAI-compatible Chat Completions endpoint.
-- The exact model name exposed by the server.
-- Support for `response_format` with `type: json_schema`.
-- Network access and any required authentication.
-
-If authentication is required:
-
-```powershell
-$env:LOCAL_LLM_API_KEY = "YOUR_API_KEY"
-```
-
-Then run:
-
-```powershell
-$localRun = Get-Date -Format "yyyyMMdd-HHmmss-fff"
-
-.\.venv\Scripts\python.exe -m triage.app `
-    --mode local `
-    --model "MODEL_NAME" `
-    --base-url "https://llm.internal.example/v1" `
-    --db "runtime/internal-$localRun.sqlite"
-```
-
-Do not store credentials in source control or disable TLS verification.
-
-Compatibility must be verified against the target server.
-Successful Ollama execution does not establish compatibility with the
-company's endpoint.
-
-### Troubleshooting
+## Ollama troubleshooting
 
 | Symptom | Check |
 |---|---|
-| Connection error or timeout | Server availability, network, VPN and firewall |
+| Connection error or timeout | Ollama is running and localhost:11434 is reachable |
 | Timeout during inference | Model warm-up, hardware speed and configured timeout |
-| Authentication error | API key and endpoint access policy |
-| Model not found | Exact installed or exposed model name |
-| Request rejected | Base URL, Chat Completions and JSON-schema support |
+| Model not found | Confirm `llama3.2:3b` appears in `ollama list` |
+| Request rejected | Ollama version, local API URL and JSON-schema support |
 | Validation error | Model output against the Decision schema |
 | Old decisions or skipped actions | Use a fresh database filename |
 
@@ -269,7 +259,8 @@ The LLM supplies interpretation. Application policies authorize actions.
 The security gate runs before action execution; it does not prevent
 the model from reading or being influenced by malicious email content.
 
-See [architecture and Exchange integration](docs/architecture.md).
+See [architecture](docs/architecture.md) and the
+[Exchange integration design](docs/exchange-integration.md).
 
 ## Security gate
 
@@ -346,25 +337,49 @@ not an immutable audit trail containing every historical attempt.
 
 | Location | Content |
 |---|---|
-| `src/triage/` | Application, models, settings and security gate |
+| `src/triage/` | Application, models, settings, separate prompts and security gate |
 | `tests/` | Automated tests |
 | `data/emails.json` | Original scenarios and mock classifications |
 | `data/evaluation.json` | Additional regression scenarios |
-| `docs/architecture.md` | Architecture, Graph design and production note |
+| `docs/architecture.md` | Compact architecture and five-line production note |
+| `docs/exchange-integration.md` | Detailed Graph integration design |
+| `docs/presentation.md` | Five-minute nontechnical presentation notes |
 | `docs/evaluation.md` | Acceptance criteria and evaluation findings |
 | `docs/test-cases.md` | Categorized automated test cases and coverage limits |
-| `artifacts/` | Saved test results and execution traces |
+| `artifacts/` | Saved test results, verified LLM traces and mock recovery evidence |
 
-The submitted traces use the final local LLM workflow:
+The three original LLM traces are preserved evidence from earlier real Ollama
+executions. They have not been relabeled as new inference runs. Their final
+plans and security assessments were verified against the current implementation:
 
 - `first-run.jsonl`: fresh model decisions and mock actions.
 - `second-run.jsonl`: cached decisions and skipped completed actions.
 - `evaluation-run.jsonl`: additional regression scenarios, including v08 containment.
-- `repeat-inference-run.jsonl`: fresh inference on the original scenarios.
 - `first-run-view.json` and `evaluation-run-view.json`: formatted JSON copies.
-- `tests.txt` and `demo-check.txt`: saved test and trace verification results.
+- `tests.txt`: current automated test result.
+- `demo-check.txt`: verification of current policies against preserved traces.
+- `recovery-run-view.json`: current mock failure/recovery evidence, formatted for presentation.
 
 The security gate runs in every mode, including runs with cached decisions.
+
+## Failure handling and action statuses
+
+A failed action or an action needing reconciliation blocks subsequent
+non-escalation actions for that email. Independent human/security escalations
+remain eligible to execute. A Holding failure therefore does not suppress
+the security alert, while a Finance routing failure blocks acknowledgment.
+
+| Status | Meaning |
+|---|---|
+| `done` | Mock action completed |
+| `skipped` | Action completed on an earlier run |
+| `failed` | Attempted action raised an error |
+| `blocked` | Action was not attempted because a prior action failed or needs reconciliation |
+| `needs_reconciliation` | An earlier running state requires outcome investigation |
+
+Blocked results appear in the returned report; they do not create separate
+rows in the action ledger. Notification failures are recorded, not guaranteed
+to reach a person. A subsequent run retries failed actions but skips completed ones.
 
 ## Production boundaries
 
@@ -376,7 +391,8 @@ Before production use, additional work includes:
 - Mailbox-scoped authorization and reliable synchronization.
 - Durable escalation delivery and operational monitoring.
 - Reconciliation of uncertain remote action outcomes.
-- Controlled human review and reprocessing.
+- Human approval and reconsideration of successful but incorrect decisions.
+  Explicit retry of failed classifications is already implemented.
 - Concurrency control.
 - Broader model and security evaluation.
 - Versioned models, prompts and policies.

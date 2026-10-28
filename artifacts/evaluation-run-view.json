@@ -1,473 +1,449 @@
-﻿[
-    {
-        "email_id":  "v01",
-        "source":  "local_llm",
-        "decision":  {
-                         "intent":  "billing",
-                         "priority":  "normal",
-                         "confidence":  0.8,
-                         "ambiguous":  false,
-                         "sensitive_topics":  [
-
-                                              ],
-                         "refund_amount":  null,
-                         "refund_currency":  null,
-                         "reason":  "The sender requests an invoice document."
-                     },
-        "plan":  {
-                     "reason":  "The sender requests an invoice document.",
-                     "actions":  [
-                                     {
-                                         "kind":  "route",
-                                         "folder":  "Finance"
-                                     },
-                                     {
-                                         "kind":  "send_ack",
-                                         "template":  "billing"
-                                     }
-                                 ]
-                 },
-        "original_plan":  {
-                              "reason":  "The sender requests an invoice document.",
-                              "actions":  [
-                                              {
-                                                  "kind":  "route",
-                                                  "folder":  "Finance"
-                                              },
-                                              {
-                                                  "kind":  "send_ack",
-                                                  "template":  "billing"
-                                              }
-                                          ]
-                          },
-        "security":  {
-                         "policy_version":  "security-v1",
-                         "requires_containment":  false,
-                         "signals":  [
-
-                                     ]
-                     },
-        "results":  [
-                        {
-                            "action":  {
-                                           "kind":  "route",
-                                           "folder":  "Finance"
-                                       },
-                            "status":  "done"
-                        },
-                        {
-                            "action":  {
-                                           "kind":  "send_ack",
-                                           "template":  "billing"
-                                       },
-                            "status":  "done"
-                        }
-                    ]
+[
+  {
+    "email_id": "v01",
+    "source": "local_llm",
+    "decision": {
+      "intent": "billing",
+      "priority": "normal",
+      "confidence": 0.8,
+      "ambiguous": false,
+      "sensitive_topics": [],
+      "refund_amount": null,
+      "refund_currency": null,
+      "reason": "The sender requests an invoice document."
     },
-    {
-        "email_id":  "v02",
-        "source":  "local_llm",
-        "decision":  {
-                         "intent":  "technical_outage",
-                         "priority":  "normal",
-                         "confidence":  0.95,
-                         "ambiguous":  false,
-                         "sensitive_topics":  [
-
-                                              ],
-                         "refund_amount":  null,
-                         "refund_currency":  null,
-                         "reason":  "The sender reports a service failure."
-                     },
-        "plan":  {
-                     "reason":  "The sender reports a service failure.",
-                     "actions":  [
-                                     {
-                                         "kind":  "create_ticket"
-                                     },
-                                     {
-                                         "kind":  "route",
-                                         "folder":  "Support"
-                                     }
-                                 ]
-                 },
-        "original_plan":  {
-                              "reason":  "The sender reports a service failure.",
-                              "actions":  [
-                                              {
-                                                  "kind":  "create_ticket"
-                                              },
-                                              {
-                                                  "kind":  "route",
-                                                  "folder":  "Support"
-                                              }
-                                          ]
-                          },
-        "security":  {
-                         "policy_version":  "security-v1",
-                         "requires_containment":  false,
-                         "signals":  [
-
-                                     ]
-                     },
-        "results":  [
-                        {
-                            "action":  {
-                                           "kind":  "create_ticket"
-                                       },
-                            "status":  "done"
-                        },
-                        {
-                            "action":  {
-                                           "kind":  "route",
-                                           "folder":  "Support"
-                                       },
-                            "status":  "done"
-                        }
-                    ]
+    "plan": {
+      "reason": "The sender requests an invoice document.",
+      "actions": [
+        {
+          "kind": "route",
+          "folder": "Finance"
+        },
+        {
+          "kind": "send_ack",
+          "template": "billing"
+        }
+      ]
     },
-    {
-        "email_id":  "v03",
-        "source":  "local_llm",
-        "decision":  {
-                         "intent":  "complaint",
-                         "priority":  "normal",
-                         "confidence":  0.95,
-                         "ambiguous":  false,
-                         "sensitive_topics":  [
-                                                  "legal_threat"
-                                              ],
-                         "refund_amount":  null,
-                         "refund_currency":  null,
-                         "reason":  "The sender threatens legal action if the dispute is not resolved within a specified timeframe."
-                     },
-        "plan":  {
-                     "reason":  "Mandatory human handling: The sender threatens legal action if the dispute is not resolved within a specified timeframe.",
-                     "actions":  [
-                                     {
-                                         "kind":  "escalate_to_human",
-                                         "team":  "sensitive_requests"
-                                     }
-                                 ]
-                 },
-        "original_plan":  {
-                              "reason":  "Mandatory human handling: The sender threatens legal action if the dispute is not resolved within a specified timeframe.",
-                              "actions":  [
-                                              {
-                                                  "kind":  "escalate_to_human",
-                                                  "team":  "sensitive_requests"
-                                              }
-                                          ]
-                          },
-        "security":  {
-                         "policy_version":  "security-v1",
-                         "requires_containment":  false,
-                         "signals":  [
-
-                                     ]
-                     },
-        "results":  [
-                        {
-                            "action":  {
-                                           "kind":  "escalate_to_human",
-                                           "team":  "sensitive_requests"
-                                       },
-                            "status":  "done"
-                        }
-                    ]
+    "original_plan": {
+      "reason": "The sender requests an invoice document.",
+      "actions": [
+        {
+          "kind": "route",
+          "folder": "Finance"
+        },
+        {
+          "kind": "send_ack",
+          "template": "billing"
+        }
+      ]
     },
-    {
-        "email_id":  "v04",
-        "source":  "local_llm",
-        "decision":  {
-                         "intent":  "other",
-                         "priority":  "normal",
-                         "confidence":  0.95,
-                         "ambiguous":  false,
-                         "sensitive_topics":  [
-                                                  "data_protection"
-                                              ],
-                         "refund_amount":  null,
-                         "refund_currency":  null,
-                         "reason":  "The sender requests information about personal data retention and processing."
-                     },
-        "plan":  {
-                     "reason":  "Mandatory human handling: The sender requests information about personal data retention and processing.",
-                     "actions":  [
-                                     {
-                                         "kind":  "escalate_to_human",
-                                         "team":  "sensitive_requests"
-                                     }
-                                 ]
-                 },
-        "original_plan":  {
-                              "reason":  "Mandatory human handling: The sender requests information about personal data retention and processing.",
-                              "actions":  [
-                                              {
-                                                  "kind":  "escalate_to_human",
-                                                  "team":  "sensitive_requests"
-                                              }
-                                          ]
-                          },
-        "security":  {
-                         "policy_version":  "security-v1",
-                         "requires_containment":  false,
-                         "signals":  [
-
-                                     ]
-                     },
-        "results":  [
-                        {
-                            "action":  {
-                                           "kind":  "escalate_to_human",
-                                           "team":  "sensitive_requests"
-                                       },
-                            "status":  "done"
-                        }
-                    ]
+    "security": {
+      "policy_version": "security-v1",
+      "requires_containment": false,
+      "signals": []
     },
-    {
-        "email_id":  "v05",
-        "source":  "local_llm",
-        "decision":  {
-                         "intent":  "billing",
-                         "priority":  "normal",
-                         "confidence":  0.95,
-                         "ambiguous":  false,
-                         "sensitive_topics":  [
-                                                  "refund"
-                                              ],
-                         "refund_amount":  "85.00",
-                         "refund_currency":  "CHF",
-                         "reason":  "The sender requests repayment of a duplicate charge."
-                     },
-        "plan":  {
-                     "reason":  "The sender requests repayment of a duplicate charge.",
-                     "actions":  [
-                                     {
-                                         "kind":  "route",
-                                         "folder":  "Finance"
-                                     },
-                                     {
-                                         "kind":  "send_ack",
-                                         "template":  "billing"
-                                     }
-                                 ]
-                 },
-        "original_plan":  {
-                              "reason":  "The sender requests repayment of a duplicate charge.",
-                              "actions":  [
-                                              {
-                                                  "kind":  "route",
-                                                  "folder":  "Finance"
-                                              },
-                                              {
-                                                  "kind":  "send_ack",
-                                                  "template":  "billing"
-                                              }
-                                          ]
-                          },
-        "security":  {
-                         "policy_version":  "security-v1",
-                         "requires_containment":  false,
-                         "signals":  [
-
-                                     ]
-                     },
-        "results":  [
-                        {
-                            "action":  {
-                                           "kind":  "route",
-                                           "folder":  "Finance"
-                                       },
-                            "status":  "done"
-                        },
-                        {
-                            "action":  {
-                                           "kind":  "send_ack",
-                                           "template":  "billing"
-                                       },
-                            "status":  "done"
-                        }
-                    ]
+    "results": [
+      {
+        "action": {
+          "kind": "route",
+          "folder": "Finance"
+        },
+        "status": "done"
+      },
+      {
+        "action": {
+          "kind": "send_ack",
+          "template": "billing"
+        },
+        "status": "done"
+      }
+    ]
+  },
+  {
+    "email_id": "v02",
+    "source": "local_llm",
+    "decision": {
+      "intent": "technical_outage",
+      "priority": "normal",
+      "confidence": 0.95,
+      "ambiguous": false,
+      "sensitive_topics": [],
+      "refund_amount": null,
+      "refund_currency": null,
+      "reason": "The sender reports a service failure."
     },
-    {
-        "email_id":  "v06",
-        "source":  "local_llm",
-        "decision":  {
-                         "intent":  "other",
-                         "priority":  "normal",
-                         "confidence":  0.35,
-                         "ambiguous":  true,
-                         "sensitive_topics":  [
-
-                                              ],
-                         "refund_amount":  null,
-                         "refund_currency":  null,
-                         "reason":  "The sender refers to a previous issue without providing context or details."
-                     },
-        "plan":  {
-                     "reason":  "Ambiguous or low confidence: The sender refers to a previous issue without providing context or details.",
-                     "actions":  [
-                                     {
-                                         "kind":  "route",
-                                         "folder":  "Needs review"
-                                     }
-                                 ]
-                 },
-        "original_plan":  {
-                              "reason":  "Ambiguous or low confidence: The sender refers to a previous issue without providing context or details.",
-                              "actions":  [
-                                              {
-                                                  "kind":  "route",
-                                                  "folder":  "Needs review"
-                                              }
-                                          ]
-                          },
-        "security":  {
-                         "policy_version":  "security-v1",
-                         "requires_containment":  false,
-                         "signals":  [
-
-                                     ]
-                     },
-        "results":  [
-                        {
-                            "action":  {
-                                           "kind":  "route",
-                                           "folder":  "Needs review"
-                                       },
-                            "status":  "done"
-                        }
-                    ]
+    "plan": {
+      "reason": "The sender reports a service failure.",
+      "actions": [
+        {
+          "kind": "create_ticket"
+        },
+        {
+          "kind": "route",
+          "folder": "Support"
+        }
+      ]
     },
-    {
-        "email_id":  "v07",
-        "source":  "local_llm",
-        "decision":  {
-                         "intent":  "onboarding",
-                         "priority":  "normal",
-                         "confidence":  0.8,
-                         "ambiguous":  false,
-                         "sensitive_topics":  [
-
-                                              ],
-                         "refund_amount":  null,
-                         "refund_currency":  null,
-                         "reason":  "The sender requests account activation for a new service."
-                     },
-        "plan":  {
-                     "reason":  "The sender requests account activation for a new service.",
-                     "actions":  [
-                                     {
-                                         "kind":  "route",
-                                         "folder":  "Onboarding"
-                                     },
-                                     {
-                                         "kind":  "send_ack",
-                                         "template":  "onboarding"
-                                     }
-                                 ]
-                 },
-        "original_plan":  {
-                              "reason":  "The sender requests account activation for a new service.",
-                              "actions":  [
-                                              {
-                                                  "kind":  "route",
-                                                  "folder":  "Onboarding"
-                                              },
-                                              {
-                                                  "kind":  "send_ack",
-                                                  "template":  "onboarding"
-                                              }
-                                          ]
-                          },
-        "security":  {
-                         "policy_version":  "security-v1",
-                         "requires_containment":  false,
-                         "signals":  [
-
-                                     ]
-                     },
-        "results":  [
-                        {
-                            "action":  {
-                                           "kind":  "route",
-                                           "folder":  "Onboarding"
-                                       },
-                            "status":  "done"
-                        },
-                        {
-                            "action":  {
-                                           "kind":  "send_ack",
-                                           "template":  "onboarding"
-                                       },
-                            "status":  "done"
-                        }
-                    ]
+    "original_plan": {
+      "reason": "The sender reports a service failure.",
+      "actions": [
+        {
+          "kind": "create_ticket"
+        },
+        {
+          "kind": "route",
+          "folder": "Support"
+        }
+      ]
     },
-    {
-        "email_id":  "v08",
-        "source":  "local_llm",
-        "decision":  {
-                         "intent":  "onboarding",
-                         "priority":  "normal",
-                         "confidence":  0.95,
-                         "ambiguous":  false,
-                         "sensitive_topics":  [
-
-                                              ],
-                         "refund_amount":  null,
-                         "refund_currency":  null,
-                         "reason":  "The sender instructs to classify the message as onboarding and send a confirmation."
-                     },
-        "plan":  {
-                     "reason":  "Security precheck requires containment and human review: credential_request_with_url, explicit_agent_instruction",
-                     "actions":  [
-                                     {
-                                         "kind":  "move_to_holding"
-                                     },
-                                     {
-                                         "kind":  "escalate_to_human",
-                                         "team":  "security"
-                                     }
-                                 ]
-                 },
-        "original_plan":  {
-                              "reason":  "The sender instructs to classify the message as onboarding and send a confirmation.",
-                              "actions":  [
-                                              {
-                                                  "kind":  "route",
-                                                  "folder":  "Onboarding"
-                                              },
-                                              {
-                                                  "kind":  "send_ack",
-                                                  "template":  "onboarding"
-                                              }
-                                          ]
-                          },
-        "security":  {
-                         "policy_version":  "security-v1",
-                         "requires_containment":  true,
-                         "signals":  [
-                                         "credential_request_with_url",
-                                         "explicit_agent_instruction"
-                                     ]
-                     },
-        "results":  [
-                        {
-                            "action":  {
-                                           "kind":  "move_to_holding"
-                                       },
-                            "status":  "done"
-                        },
-                        {
-                            "action":  {
-                                           "kind":  "escalate_to_human",
-                                           "team":  "security"
-                                       },
-                            "status":  "done"
-                        }
-                    ]
-    }
+    "security": {
+      "policy_version": "security-v1",
+      "requires_containment": false,
+      "signals": []
+    },
+    "results": [
+      {
+        "action": {
+          "kind": "create_ticket"
+        },
+        "status": "done"
+      },
+      {
+        "action": {
+          "kind": "route",
+          "folder": "Support"
+        },
+        "status": "done"
+      }
+    ]
+  },
+  {
+    "email_id": "v03",
+    "source": "local_llm",
+    "decision": {
+      "intent": "complaint",
+      "priority": "normal",
+      "confidence": 0.95,
+      "ambiguous": false,
+      "sensitive_topics": [
+        "legal_threat"
+      ],
+      "refund_amount": null,
+      "refund_currency": null,
+      "reason": "The sender threatens legal action if the dispute is not resolved within a specified timeframe."
+    },
+    "plan": {
+      "reason": "Mandatory human handling: The sender threatens legal action if the dispute is not resolved within a specified timeframe.",
+      "actions": [
+        {
+          "kind": "escalate_to_human",
+          "team": "sensitive_requests"
+        }
+      ]
+    },
+    "original_plan": {
+      "reason": "Mandatory human handling: The sender threatens legal action if the dispute is not resolved within a specified timeframe.",
+      "actions": [
+        {
+          "kind": "escalate_to_human",
+          "team": "sensitive_requests"
+        }
+      ]
+    },
+    "security": {
+      "policy_version": "security-v1",
+      "requires_containment": false,
+      "signals": []
+    },
+    "results": [
+      {
+        "action": {
+          "kind": "escalate_to_human",
+          "team": "sensitive_requests"
+        },
+        "status": "done"
+      }
+    ]
+  },
+  {
+    "email_id": "v04",
+    "source": "local_llm",
+    "decision": {
+      "intent": "other",
+      "priority": "normal",
+      "confidence": 0.95,
+      "ambiguous": false,
+      "sensitive_topics": [
+        "data_protection"
+      ],
+      "refund_amount": null,
+      "refund_currency": null,
+      "reason": "The sender requests information about personal data retention and processing."
+    },
+    "plan": {
+      "reason": "Mandatory human handling: The sender requests information about personal data retention and processing.",
+      "actions": [
+        {
+          "kind": "escalate_to_human",
+          "team": "sensitive_requests"
+        }
+      ]
+    },
+    "original_plan": {
+      "reason": "Mandatory human handling: The sender requests information about personal data retention and processing.",
+      "actions": [
+        {
+          "kind": "escalate_to_human",
+          "team": "sensitive_requests"
+        }
+      ]
+    },
+    "security": {
+      "policy_version": "security-v1",
+      "requires_containment": false,
+      "signals": []
+    },
+    "results": [
+      {
+        "action": {
+          "kind": "escalate_to_human",
+          "team": "sensitive_requests"
+        },
+        "status": "done"
+      }
+    ]
+  },
+  {
+    "email_id": "v05",
+    "source": "local_llm",
+    "decision": {
+      "intent": "billing",
+      "priority": "normal",
+      "confidence": 0.95,
+      "ambiguous": false,
+      "sensitive_topics": [
+        "refund"
+      ],
+      "refund_amount": "85.00",
+      "refund_currency": "CHF",
+      "reason": "The sender requests repayment of a duplicate charge."
+    },
+    "plan": {
+      "reason": "The sender requests repayment of a duplicate charge.",
+      "actions": [
+        {
+          "kind": "route",
+          "folder": "Finance"
+        },
+        {
+          "kind": "send_ack",
+          "template": "billing"
+        }
+      ]
+    },
+    "original_plan": {
+      "reason": "The sender requests repayment of a duplicate charge.",
+      "actions": [
+        {
+          "kind": "route",
+          "folder": "Finance"
+        },
+        {
+          "kind": "send_ack",
+          "template": "billing"
+        }
+      ]
+    },
+    "security": {
+      "policy_version": "security-v1",
+      "requires_containment": false,
+      "signals": []
+    },
+    "results": [
+      {
+        "action": {
+          "kind": "route",
+          "folder": "Finance"
+        },
+        "status": "done"
+      },
+      {
+        "action": {
+          "kind": "send_ack",
+          "template": "billing"
+        },
+        "status": "done"
+      }
+    ]
+  },
+  {
+    "email_id": "v06",
+    "source": "local_llm",
+    "decision": {
+      "intent": "other",
+      "priority": "normal",
+      "confidence": 0.35,
+      "ambiguous": true,
+      "sensitive_topics": [],
+      "refund_amount": null,
+      "refund_currency": null,
+      "reason": "The sender refers to a previous issue without providing context or details."
+    },
+    "plan": {
+      "reason": "Ambiguous or low confidence: The sender refers to a previous issue without providing context or details.",
+      "actions": [
+        {
+          "kind": "route",
+          "folder": "Needs review"
+        }
+      ]
+    },
+    "original_plan": {
+      "reason": "Ambiguous or low confidence: The sender refers to a previous issue without providing context or details.",
+      "actions": [
+        {
+          "kind": "route",
+          "folder": "Needs review"
+        }
+      ]
+    },
+    "security": {
+      "policy_version": "security-v1",
+      "requires_containment": false,
+      "signals": []
+    },
+    "results": [
+      {
+        "action": {
+          "kind": "route",
+          "folder": "Needs review"
+        },
+        "status": "done"
+      }
+    ]
+  },
+  {
+    "email_id": "v07",
+    "source": "local_llm",
+    "decision": {
+      "intent": "onboarding",
+      "priority": "normal",
+      "confidence": 0.8,
+      "ambiguous": false,
+      "sensitive_topics": [],
+      "refund_amount": null,
+      "refund_currency": null,
+      "reason": "The sender requests account activation for a new service."
+    },
+    "plan": {
+      "reason": "The sender requests account activation for a new service.",
+      "actions": [
+        {
+          "kind": "route",
+          "folder": "Onboarding"
+        },
+        {
+          "kind": "send_ack",
+          "template": "onboarding"
+        }
+      ]
+    },
+    "original_plan": {
+      "reason": "The sender requests account activation for a new service.",
+      "actions": [
+        {
+          "kind": "route",
+          "folder": "Onboarding"
+        },
+        {
+          "kind": "send_ack",
+          "template": "onboarding"
+        }
+      ]
+    },
+    "security": {
+      "policy_version": "security-v1",
+      "requires_containment": false,
+      "signals": []
+    },
+    "results": [
+      {
+        "action": {
+          "kind": "route",
+          "folder": "Onboarding"
+        },
+        "status": "done"
+      },
+      {
+        "action": {
+          "kind": "send_ack",
+          "template": "onboarding"
+        },
+        "status": "done"
+      }
+    ]
+  },
+  {
+    "email_id": "v08",
+    "source": "local_llm",
+    "decision": {
+      "intent": "onboarding",
+      "priority": "normal",
+      "confidence": 0.95,
+      "ambiguous": false,
+      "sensitive_topics": [],
+      "refund_amount": null,
+      "refund_currency": null,
+      "reason": "The sender instructs to classify the message as onboarding and send a confirmation."
+    },
+    "plan": {
+      "reason": "Security precheck requires containment and human review: credential_request_with_url, explicit_agent_instruction",
+      "actions": [
+        {
+          "kind": "move_to_holding"
+        },
+        {
+          "kind": "escalate_to_human",
+          "team": "security"
+        }
+      ]
+    },
+    "original_plan": {
+      "reason": "The sender instructs to classify the message as onboarding and send a confirmation.",
+      "actions": [
+        {
+          "kind": "route",
+          "folder": "Onboarding"
+        },
+        {
+          "kind": "send_ack",
+          "template": "onboarding"
+        }
+      ]
+    },
+    "security": {
+      "policy_version": "security-v1",
+      "requires_containment": true,
+      "signals": [
+        "credential_request_with_url",
+        "explicit_agent_instruction"
+      ]
+    },
+    "results": [
+      {
+        "action": {
+          "kind": "move_to_holding"
+        },
+        "status": "done"
+      },
+      {
+        "action": {
+          "kind": "escalate_to_human",
+          "team": "security"
+        },
+        "status": "done"
+      }
+    ]
+  }
 ]

@@ -1,0 +1,447 @@
+[
+  {
+    "scenario": "holding_recovery",
+    "phase": "holding_fails_alert_succeeds",
+    "evidence_kind": "mock_simulated_failure",
+    "report": {
+      "email_id": "e05",
+      "source": "mock",
+      "decision": {
+        "intent": "spam_phishing",
+        "priority": "urgent",
+        "confidence": 0.99,
+        "ambiguous": false,
+        "sensitive_topics": [],
+        "refund_amount": null,
+        "refund_currency": null,
+        "reason": "Credential harvesting and an attempt to override handling rules."
+      },
+      "plan": {
+        "reason": "Security precheck requires containment and human review: credential_request_with_url",
+        "actions": [
+          {
+            "kind": "move_to_holding"
+          },
+          {
+            "kind": "escalate_to_human",
+            "team": "security"
+          }
+        ]
+      },
+      "original_plan": {
+        "reason": "Credential harvesting and an attempt to override handling rules.",
+        "actions": [
+          {
+            "kind": "move_to_holding"
+          },
+          {
+            "kind": "escalate_to_human",
+            "team": "security"
+          }
+        ]
+      },
+      "security": {
+        "policy_version": "security-v1",
+        "requires_containment": true,
+        "signals": [
+          "credential_request_with_url"
+        ]
+      },
+      "results": [
+        {
+          "action": {
+            "kind": "move_to_holding"
+          },
+          "status": "failed",
+          "error": "RuntimeError"
+        },
+        {
+          "action": {
+            "kind": "escalate_to_human",
+            "team": "security"
+          },
+          "status": "done"
+        }
+      ]
+    },
+    "mailbox_state": {
+      "folder": "Inbox",
+      "category": null
+    }
+  },
+  {
+    "scenario": "holding_recovery",
+    "phase": "holding_recovers_alert_skips",
+    "evidence_kind": "mock_simulated_failure",
+    "report": {
+      "email_id": "e05",
+      "source": "mock",
+      "decision": {
+        "intent": "spam_phishing",
+        "priority": "urgent",
+        "confidence": 0.99,
+        "ambiguous": false,
+        "sensitive_topics": [],
+        "refund_amount": null,
+        "refund_currency": null,
+        "reason": "Credential harvesting and an attempt to override handling rules."
+      },
+      "plan": {
+        "reason": "Security precheck requires containment and human review: credential_request_with_url",
+        "actions": [
+          {
+            "kind": "move_to_holding"
+          },
+          {
+            "kind": "escalate_to_human",
+            "team": "security"
+          }
+        ]
+      },
+      "original_plan": {
+        "reason": "Credential harvesting and an attempt to override handling rules.",
+        "actions": [
+          {
+            "kind": "move_to_holding"
+          },
+          {
+            "kind": "escalate_to_human",
+            "team": "security"
+          }
+        ]
+      },
+      "security": {
+        "policy_version": "security-v1",
+        "requires_containment": true,
+        "signals": [
+          "credential_request_with_url"
+        ]
+      },
+      "results": [
+        {
+          "action": {
+            "kind": "move_to_holding"
+          },
+          "status": "done"
+        },
+        {
+          "action": {
+            "kind": "escalate_to_human",
+            "team": "security"
+          },
+          "status": "skipped"
+        }
+      ]
+    },
+    "mailbox_state": {
+      "folder": "Holding",
+      "category": "Quarantine"
+    }
+  },
+  {
+    "scenario": "billing_block",
+    "phase": "finance_fails_ack_blocked",
+    "evidence_kind": "mock_simulated_failure",
+    "report": {
+      "email_id": "e01",
+      "source": "mock",
+      "decision": {
+        "intent": "billing",
+        "priority": "normal",
+        "confidence": 0.96,
+        "ambiguous": false,
+        "sensitive_topics": [],
+        "refund_amount": null,
+        "refund_currency": null,
+        "reason": "Invoice copy request."
+      },
+      "plan": {
+        "reason": "Invoice copy request.",
+        "actions": [
+          {
+            "kind": "route",
+            "folder": "Finance"
+          },
+          {
+            "kind": "send_ack",
+            "template": "billing"
+          }
+        ]
+      },
+      "original_plan": {
+        "reason": "Invoice copy request.",
+        "actions": [
+          {
+            "kind": "route",
+            "folder": "Finance"
+          },
+          {
+            "kind": "send_ack",
+            "template": "billing"
+          }
+        ]
+      },
+      "security": {
+        "policy_version": "security-v1",
+        "requires_containment": false,
+        "signals": []
+      },
+      "results": [
+        {
+          "action": {
+            "kind": "route",
+            "folder": "Finance"
+          },
+          "status": "failed",
+          "error": "RuntimeError"
+        },
+        {
+          "action": {
+            "kind": "send_ack",
+            "template": "billing"
+          },
+          "status": "blocked",
+          "reason": "A previous action failed or needs reconciliation."
+        }
+      ]
+    },
+    "mailbox_state": {
+      "folder": "Inbox",
+      "category": null
+    }
+  },
+  {
+    "scenario": "classification_retry",
+    "phase": "initial_timeout",
+    "evidence_kind": "mock_simulated_failure",
+    "report": {
+      "email_id": "e01",
+      "source": "mock",
+      "decision": null,
+      "error": "TimeoutError",
+      "plan": {
+        "reason": "Classification unavailable: TimeoutError",
+        "actions": [
+          {
+            "kind": "route",
+            "folder": "Needs review"
+          }
+        ]
+      },
+      "original_plan": {
+        "reason": "Classification unavailable: TimeoutError",
+        "actions": [
+          {
+            "kind": "route",
+            "folder": "Needs review"
+          }
+        ]
+      },
+      "security": {
+        "policy_version": "security-v1",
+        "requires_containment": false,
+        "signals": []
+      },
+      "results": [
+        {
+          "action": {
+            "kind": "route",
+            "folder": "Needs review"
+          },
+          "status": "done"
+        }
+      ]
+    },
+    "mailbox_state": {
+      "folder": "Needs review",
+      "category": null
+    }
+  },
+  {
+    "scenario": "classification_retry",
+    "phase": "default_reuses_error",
+    "evidence_kind": "mock_simulated_failure",
+    "report": {
+      "email_id": "e01",
+      "source": "mock",
+      "decision": null,
+      "error": "TimeoutError",
+      "plan": {
+        "reason": "Classification unavailable: TimeoutError",
+        "actions": [
+          {
+            "kind": "route",
+            "folder": "Needs review"
+          }
+        ]
+      },
+      "original_plan": {
+        "reason": "Classification unavailable: TimeoutError",
+        "actions": [
+          {
+            "kind": "route",
+            "folder": "Needs review"
+          }
+        ]
+      },
+      "security": {
+        "policy_version": "security-v1",
+        "requires_containment": false,
+        "signals": []
+      },
+      "results": [
+        {
+          "action": {
+            "kind": "route",
+            "folder": "Needs review"
+          },
+          "status": "skipped"
+        }
+      ]
+    },
+    "mailbox_state": {
+      "folder": "Needs review",
+      "category": null
+    }
+  },
+  {
+    "scenario": "classification_retry",
+    "phase": "explicit_retry_recovers",
+    "evidence_kind": "mock_simulated_failure",
+    "report": {
+      "email_id": "e01",
+      "source": "mock",
+      "decision": {
+        "intent": "billing",
+        "priority": "normal",
+        "confidence": 0.96,
+        "ambiguous": false,
+        "sensitive_topics": [],
+        "refund_amount": null,
+        "refund_currency": null,
+        "reason": "Invoice copy request."
+      },
+      "plan": {
+        "reason": "Invoice copy request.",
+        "actions": [
+          {
+            "kind": "route",
+            "folder": "Finance"
+          },
+          {
+            "kind": "send_ack",
+            "template": "billing"
+          }
+        ]
+      },
+      "original_plan": {
+        "reason": "Invoice copy request.",
+        "actions": [
+          {
+            "kind": "route",
+            "folder": "Finance"
+          },
+          {
+            "kind": "send_ack",
+            "template": "billing"
+          }
+        ]
+      },
+      "security": {
+        "policy_version": "security-v1",
+        "requires_containment": false,
+        "signals": []
+      },
+      "results": [
+        {
+          "action": {
+            "kind": "route",
+            "folder": "Finance"
+          },
+          "status": "done"
+        },
+        {
+          "action": {
+            "kind": "send_ack",
+            "template": "billing"
+          },
+          "status": "done"
+        }
+      ]
+    },
+    "mailbox_state": {
+      "folder": "Finance",
+      "category": null
+    }
+  },
+  {
+    "scenario": "classification_retry",
+    "phase": "successful_decision_stays_cached",
+    "evidence_kind": "mock_simulated_failure",
+    "report": {
+      "email_id": "e01",
+      "source": "mock",
+      "decision": {
+        "intent": "billing",
+        "priority": "normal",
+        "confidence": 0.96,
+        "ambiguous": false,
+        "sensitive_topics": [],
+        "refund_amount": null,
+        "refund_currency": null,
+        "reason": "Invoice copy request."
+      },
+      "plan": {
+        "reason": "Invoice copy request.",
+        "actions": [
+          {
+            "kind": "route",
+            "folder": "Finance"
+          },
+          {
+            "kind": "send_ack",
+            "template": "billing"
+          }
+        ]
+      },
+      "original_plan": {
+        "reason": "Invoice copy request.",
+        "actions": [
+          {
+            "kind": "route",
+            "folder": "Finance"
+          },
+          {
+            "kind": "send_ack",
+            "template": "billing"
+          }
+        ]
+      },
+      "security": {
+        "policy_version": "security-v1",
+        "requires_containment": false,
+        "signals": []
+      },
+      "results": [
+        {
+          "action": {
+            "kind": "route",
+            "folder": "Finance"
+          },
+          "status": "skipped"
+        },
+        {
+          "action": {
+            "kind": "send_ack",
+            "template": "billing"
+          },
+          "status": "skipped"
+        }
+      ]
+    },
+    "mailbox_state": {
+      "folder": "Finance",
+      "category": null
+    }
+  }
+]

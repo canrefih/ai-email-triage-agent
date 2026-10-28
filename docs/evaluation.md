@@ -1,7 +1,8 @@
 # Local LLM evaluation
 
 This set was introduced after prompt development on the original eight
-emails. The prompt is held fixed during this evaluation.
+emails. The prompt stayed fixed during the initial additional evaluation.
+Later security changes turned this set into a regression set.
 
 The model receives the emails, not this expected-outcome table.
 
@@ -64,5 +65,27 @@ set rather than an independent evaluation set.
 The security gate uses narrow English-language patterns. These results
 do not establish general phishing detection or prompt-injection resistance.
 
-The automated test suite passed 60 tests.
+The automated test suite passed 74 tests.
 All mailbox actions and notifications remained mocked.
+## Evidence provenance and current changes
+
+The three real LLM JSONL records in artifacts are preserved observations,
+not new inference runs after the reliability changes. They retain the
+model's original answers, including the v08 failure. Their decisions, final
+plans and security findings were verified against the current code;
+`demo-check.txt` preserves the verification summary.
+
+The 14 added automated cases cover failure-independent notification,
+notification failure recording, blocked acknowledgments, recovery without
+duplicate alerts, rule precedence, and controlled classification retry.
+These changes do not alter the successful recorded action plans.
+
+`recovery-run-view.json` is separate deterministic mock evidence for:
+
+- Holding failure with a successful security notification, then recovery.
+- Finance routing failure with acknowledgment blocked.
+- Classification timeout, default cache reuse, explicit recovery and repeat-run skipping.
+
+These are simulated failures and classifications, not real network outages
+or new LLM decisions. Their `evidence_kind` and `source` fields identify
+the simulated origin. `demo-check.txt` records verification results.

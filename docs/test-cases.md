@@ -3,9 +3,10 @@
 ## How to read these tables
 
 Each parameter value represents a separate pytest case.
-The Count column therefore adds up to the reported 60 tests.
+The Count column therefore adds up to the reported 74 tests.
 
-PASS refers to the supplied automated test execution.
+PASS refers to the current automated execution saved in `artifacts/tests.txt`.
+Run `python -m pytest --collect-only -q` to list individual case IDs.
 Most tests use deterministic data and mocks rather than a live LLM.
 
 For negative tests, rejecting the input or raising the expected
@@ -107,7 +108,42 @@ Amounts strictly above it trigger the threshold rule.
 |---|---|---|---:|---|
 | `test_normal_outage_creates_ticket_without_escalation` | Non-urgent technical outage | Ticket then Support routing; no escalation | 1 | PASS |
 | `test_tool_failure_stops_later_actions` | Routing raises a simulated failure | Failed result recorded; acknowledgment not executed | 1 | PASS |
-| **Agent subtotal** | | | **24** | **PASS** |
+
+
+### B5. Failure isolation and recovery
+
+| Test | Scenario | Expected assertion | Count | Result |
+|---|---|---|---:|---|
+| `test_holding_failure_does_not_block_security_alert` | Holding operation raises an error | Holding fails; independent security escalation completes; mailbox stays in Inbox | 1 | PASS |
+| `test_security_alert_failure_is_recorded` | Notification operation raises an error | Holding completes; escalation is failed with its error recorded | 1 | PASS |
+| `test_billing_failure_reports_ack_as_blocked` | Finance routing fails | Report acknowledgment as blocked without executing it | 1 | PASS |
+| `test_recovery_retries_holding_without_repeating_alert` | Retry after a Holding failure | Holding succeeds on recovery; completed notification is skipped and effects are not duplicated | 1 | PASS |
+
+### B6. Conflicting rules and explicit precedence
+
+| Test | Parameters / scenario | Expected assertion | Count | Result |
+|---|---|---|---:|---|
+| `test_phishing_containment_precedes_uncertainty` | Confidence 0.1; ambiguous=true; both | Holding and security escalation take precedence over ordinary review | 3 | PASS |
+| `test_sensitive_escalation_precedes_uncertainty` | Confidence 0.1; ambiguous=true; both | Sensitive-request escalation takes precedence over ordinary review | 3 | PASS |
+| `test_phishing_with_sensitive_topic_keeps_both_escalations` | Phishing + deletion + low confidence + ambiguity | Holding, security escalation and sensitive escalation all remain in the plan | 1 | PASS |
+
+This is an explicit safety precedence assumption. The exercise's general
+uncertainty rule receives an exception for containment and mandatory
+sensitive handling. These tests document the chosen behavior rather than
+claiming a literal implementation of every possible reading of the brief.
+
+### B7. Controlled retry of failed classification
+
+| Test | Scenario | Expected assertion | Count | Result |
+|---|---|---|---:|---|
+| `test_cached_classification_error_is_not_retried_by_default` | Model recovers after a saved timeout, without retry flag | No new classification; saved failure and review outcome remain | 1 | PASS |
+| `test_explicit_retry_recovers_failed_classification` | Explicit retry after timeout, followed by another run | Reclassify once, replace current decision, complete billing actions, then skip completed effects | 1 | PASS |
+| `test_retry_option_preserves_successful_cached_decision` | Retry flag with a successful saved decision | Never call classifier; preserve decision and skip completed actions | 1 | PASS |
+| **Agent subtotal** | | | **38** | **PASS** |
+
+Retry replaces the current decision snapshot. Prior effects remain, but the
+full earlier decision payload is not preserved as an immutable history.
+The option does not retry valid but incorrect decisions or implement human approval.
 
 ## C. Security gate - `test_security.py`
 
@@ -148,9 +184,9 @@ All rows below belong to
 | Category | Cases | Passed | Failed |
 |---|---:|---:|---:|
 | Decision schema | 25 | 25 | 0 |
-| Agent behavior | 24 | 24 | 0 |
+| Agent behavior | 38 | 38 | 0 |
 | Security gate | 11 | 11 | 0 |
-| **Total** | **60** | **60** | **0** |
+| **Total** | **74** | **74** | **0** |
 
 Run the suite:
 
@@ -160,7 +196,7 @@ Run the suite:
 
 ## E. Live local LLM observations
 
-These are separate from the 60 automated tests.
+These are separate from the 74 automated tests.
 
 | Exercise | Observed result | Interpretation |
 |---|---|---|
@@ -192,7 +228,7 @@ Areas without dedicated automated coverage include:
 
 ## Final assessment
 
-The prototype passed 60 automated cases covering the defined decision
+The prototype passed 74 automated cases covering the defined decision
 contract, representative business workflows, sensitive escalation,
 uncertainty, selected failures, repeat-run protection and targeted
 security controls.
@@ -203,3 +239,16 @@ path and exposed a security failure that was retained as a regression case.
 This evidence supports the tested prototype behaviors. It does not claim
 exhaustive scenario coverage, production readiness, or general resistance
 to phishing and prompt injection.
+## G. Saved evidence
+
+- `artifacts/tests.txt`: current full-suite result.
+- `artifacts/demo-check.txt`: current checks of preserved real LLM traces.
+- `artifacts/recovery-run-view.json`: readable deterministic mock failure/recovery demonstration.
+
+The recovery JSON is a saved mock demonstration. The corresponding failure
+and recovery behaviors are reproducible through the automated tests in
+`tests/test_agent.py`; no separate demonstration utility is required.
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_agent.py -v
+```
