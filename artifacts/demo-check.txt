@@ -1,0 +1,7 @@
+PASS: first-run.jsonl: eight reports, 13 actions done
+PASS: second-run.jsonl: eight reports, 13 actions skipped
+PASS: evaluation-run.jsonl: eight reports, 13 actions done
+PASS: repeat-inference-run.jsonl: eight reports, 13 actions done
+PASS: cached decisions preserved
+PASS: sensitive topics, refund extraction and ambiguity verified
+PASS: v08 contained without acknowledgment
